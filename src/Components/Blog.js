@@ -1,10 +1,18 @@
 //Blogging App using Hooks
+import { useState } from "react";
 
 export default function Blog(){
 
+    const [title,setTitle] = useState("");
+    const [content,setContent] = useState("");
+    const [blogs, setBlogs] =  useState([]);
 
     function handleSubmit(e){
         e.preventDefault();
+
+        setBlogs([{title,content}, ...blogs]);
+        console.log(blogs); 
+
     }
 
     return(
@@ -17,12 +25,14 @@ export default function Blog(){
                 <Row label="Title">
                         <input className="input"
                                 placeholder="Enter the Title of the Blog here.."
+                                onChange = {(e) => setTitle(e.target.value)}
                         />
                 </Row >
 
                 <Row label="Content">
                         <textarea className="input content"
                                 placeholder="Content of the Blog goes here.."
+                                onChange = {(e) => setContent(e.target.value)}
                         />
                 </Row >
          
@@ -35,7 +45,13 @@ export default function Blog(){
 
         {/* Section where submitted blogs will be displayed */}
         <h2> Blogs </h2>
-
+        {blogs.map((blog,i) => (
+            <div className="blog">
+                <h3>{blog.title}</h3>
+                <hr/>
+                <p>{blog.content}</p>
+            </div>
+        ))}
         
         </>
         )
