@@ -13,6 +13,14 @@ export default function Blog(){
         titleRef.current.focus(); // focus goes onto title fiels when app renders or reloads
     },[]);
 
+    useEffect(()=>{
+        if(blogs.length){
+            blogs[0].title ? document.title = blogs[0].title : document.title = "Something"
+        }else{
+            document.title = "No Blogs!!";
+        }
+    },[blogs])
+
     function handleSubmit(e){
         e.preventDefault();
 
@@ -52,6 +60,7 @@ export default function Blog(){
                                 placeholder="Content of the Blog goes here.."
                                 value={formData.content}
                                 onChange = {(e) => setFormData({title : formData.title , content : e.target.value})}
+                                required //without content blog cannot exists 
                         />
                 </Row >
          
