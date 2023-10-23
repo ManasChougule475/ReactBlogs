@@ -1,12 +1,25 @@
 //Blogging App using Hooks
-import { useState,useRef,useEffect } from "react";
+import { useState,useRef,useEffect, useReducer } from "react";
+
+function blogsReducer(state , action){
+    switch(action.type){
+        case "Add Blog":
+            return [action.blog , ...state];
+        case "Remove Blog":
+            return state.filter((blog,index) => index!==action.index);
+        default:
+            return [];
+    }
+}
 
 export default function Blog(){
 
     // const [title,setTitle] = useState("");
     // const [content,setContent] = useState("");
     const [formData,setFormData]=useState({ title:"", content:"" }); // title & content gets updated at same time hence combined into single object
-    const [blogs, setBlogs] =  useState([]);
+    // const [blogs, setBlogs] =  useState([]);
+    const [blogs,dispatch] = useReducer(blogsReducer, []);
+
     const titleRef = useRef(null);
 
     useEffect(()=>{  
@@ -24,9 +37,9 @@ export default function Blog(){
     function handleSubmit(e){
         e.preventDefault();
 
-        setBlogs([{title: formData.title, content: formData.content}, ...blogs]);  
-        // setTitle("");
-        // setContent("");
+        // setBlogs([{title: formData.title, content: formData.content}, ...blogs]);  
+        dispatch({type:"Add Blog" , blog:{title: formData.title, content: formData.content} });
+
         setFormData({title: "" , content: ""})
 
         titleRef.current.focus(); // focus goes onto title fiels when app re-renders
@@ -36,7 +49,8 @@ export default function Blog(){
     }
 
     function removeBlog(i){
-        setBlogs(blogs.filter((blog,index)=> i!==index));
+        // setBlogs(blogs.filter((blog,index)=> i!==index));
+        dispatch({type:"Remove Blog", index:i});
     }
 
     return(
