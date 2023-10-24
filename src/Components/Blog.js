@@ -1,5 +1,5 @@
 //Blogging App using Hooks
-import { useState,useRef,useEffect, useReducer} from "react";
+import { useState,useRef,useEffect,useReducer,createRef} from "react";
 
 function blogsReducer(state , action){
     switch(action.type){
@@ -34,7 +34,7 @@ export default function Blog(){
     const [updatedTitle , setUpdatedTitle] = useState("")
     const [updatedContent, setUpdatedContent] = useState(""); // State to store the currently Updated content
 
-
+    const [contentRefs, setContentRefs] = useState([]); // to bring focus on content of blog that user wants to update
 
     useEffect(()=>{  
         titleRef.current.focus(); // focus goes onto title fiels when app renders or reloads
@@ -42,7 +42,7 @@ export default function Blog(){
 
     useEffect(()=>{
         if(blogs.length){
-            blogs[0].title ? document.title = blogs[0].title : document.title = "Something"
+            blogs[0].title ? document.title = blogs[0].title : document.title = "No Title!"
         }else{
             document.title = "No Blogs!!";
         }
@@ -61,7 +61,12 @@ export default function Blog(){
 
         setFormData({title: "" , content: ""})
 
-        titleRef.current.focus(); // focus goes onto title field when app re-renders
+        titleRef.current.focus(); // focus goes onto title field of input form when app re-renders
+
+        // creating reference(newBlogRef) to newBlog that use wants to add
+        const newBlogRef = createRef();  // cannot use useRef inside function (can use inside a react hook)
+        contentRefs.push(newBlogRef);  
+        setContentRefs([...contentRefs]);  // creates a new array with the same refs that are in contentRefs. It's using the spread operator [...contentRefs] to create a shallow copy of the array. 
 
         console.log(blogs); // prints previous state as dispatch(& setBlogs) is asynchronous fun. so blog is added inside blogs array after console.log() executes
     }
@@ -77,6 +82,13 @@ export default function Blog(){
         setUpdateIndex(i);
         setUpdatedTitle(blogs[i].title);
         setUpdatedContent(blogs[i].content); // Set the Updated content to blogs[i].content 
+
+        setTimeout(() => {
+            contentRefs[i].current.focus(); // Set focus to the content field of the specific blog
+        }, 0);  
+        // if not used setTimeout & tries to set focus using contentRefs[i].current.focus() immediately after clicking the "Update" button, then focus will not be set
+        // cause React might not have updated/rendered DOM or not updated state yet cause browser's rendering and state updates are asynchronous.
+        // hence setTimeout with a delay of 0 allows you to schedule the focus after the current rendering cycle / state update is complete  
     }
 
     function handleContentChange(e) {
@@ -87,7 +99,6 @@ export default function Blog(){
         }
     }
     
-
     function saveChanges(updatedContent,i){
         if(updatedContent){
             dispatch({ type: 'Update Blog', index: i, new_content: updatedContent , new_title: updatedTitle });
@@ -100,6 +111,7 @@ export default function Blog(){
 
     function cancleChanges(i){
         dispatch({ type: 'Update Blog', index: i, new_content: blogs[i].content , new_title: blogs[i].title });
+        titleRef.current.focus();
         setUpdateIndex(-1);
     }
 
@@ -113,10 +125,10 @@ export default function Blog(){
             <form onSubmit={handleSubmit}>
                 <Row label="Title">
                         <input className="input title"
-                                placeholder="Enter the Title of the Blog here.."
+                                placeholder="Enter the title of the blog here.."
                                 value={formData.title}
                                 ref = {titleRef}
-                                onChange = {(e) => setFormData({title : e.target.value , content: formData.content})}
+                                onChange = {(e) =>  e.target.value.length<30 ? setFormData({title : e.target.value , content: formData.content}) : alert('Size of title need to be less than 30')}
                         />
                 </Row >
 
@@ -130,8 +142,7 @@ export default function Blog(){
                 </Row >
          
                 <button className = "btn">ADD</button>
-            </form>
-                     
+            </form>  
         </div>
 
         <hr/>
@@ -149,12 +160,13 @@ export default function Blog(){
                 </div>
 
                 {/* <h3>{blog.title}</h3> */}
-                <textarea
+                <input style={{marginTop:'10px'}}
+                    type="text"
                     className="input title"
-                    placeholder="Enter title for blog"
+                    placeholder="Enter title for blog..."
                     value={updateIndex===i ? updatedTitle : blog.title}
-                    onChange={(e) => handleContentChange(e)}
-                    disabled={updateIndex !== i ? true : false}
+                    onChange={(e) => e.target.value.length<30 ? handleContentChange(e) : alert('Size of title need to be less than 30')}
+                    disabled={updateIndex !== i ? true : false}  // user cannot modify title if he has not clicked on update button
                 />
                 <hr/>
 
@@ -164,20 +176,25 @@ export default function Blog(){
                     placeholder="Content of the Blog goes here.."
                     value={updateIndex === i ? updatedContent : blog.content}
                     onChange={(e) => handleContentChange(e)}
+                    ref={contentRefs[i]} // added reference to content of blog here
                     disabled={updateIndex !== i ? true : false}
                     required
                 />
 
                 <div className="blog-btn">
                     {updateIndex === i ? 
-                    <>
-                        <button onClick={()=>saveChanges(updatedContent,i)} className="btn update"  style={{marginRight: '10px' }}>
-                            Save
-                        </button>
-                        <button onClick={()=>cancleChanges(i)} className="btn remove">
-                            Cancle
-                        </button>
-                    </>
+                    <div className="btn-container">
+                        <div style={{ width: '60px', marginRight:'20px'}}>
+                            <button onClick={()=>saveChanges(updatedContent,i)} className="btn update">
+                                Save
+                            </button>
+                        </div>
+                        <div style={{ width: '60px'}}>
+                            <button onClick={()=>cancleChanges(i)} className="btn remove" >
+                                Cancle
+                            </button>
+                        </div>
+                    </div>
                     : 
                     <button onClick={()=>removeBlog(i)} className="btn remove">
                         Delete
