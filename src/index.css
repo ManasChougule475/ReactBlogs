@@ -42,8 +42,17 @@
   font-family: Georgia, 'Times New Roman', Times, serif;
 }
 
+.title{
+  color: black;
+  font-weight: bold;
+  height:20px;
+  text-align: center;
+  background-color: rgb(86, 227, 202);
+}
+
 .content{
   height: 100px;
+  background-color: rgb(246, 221, 146);
 }
 
 
@@ -69,24 +78,33 @@ h1{
 .btn{
   border-radius: 5px;
   background-color: rgb(68, 68, 243);
+  /* background: -webkit-linear-gradient(right, #908e11, #285479); */
+
   color: white;
   border-style: none;
-  width: 80px;
+  width: 70px;
   height: 30px;
   font-size: 15px;
-  font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
-
+  font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  /* margin:10px; */
 }
 
 .remove{
   background-color: rgb(230, 83, 83);
-  width:fit-content
+  /* width:fit-content */
+}
+
+.update{
+  background-color: rgb(11, 193, 75);
+  /* width:fit-content */
 }
 
 .blog-btn{
   text-align: end;
   margin-right: 10px;
 }
+
+
 /* Created with https://www.css-gradient.com */
 /* background: #565318;
 background: -webkit-linear-gradient(right, #565318, #3C464E);
