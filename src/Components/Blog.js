@@ -1,5 +1,8 @@
 //Blogging App using Hooks
 import { useState,useRef,useEffect,useReducer,createRef} from "react";
+import {db} from "../firebaseInit";
+import { collection, addDoc , doc, setDoc } from "firebase/firestore"; 
+
 
 function blogsReducer(state , action){
     switch(action.type){
@@ -24,8 +27,9 @@ export default function Blog(){
     // const [title,setTitle] = useState("");
     // const [content,setContent] = useState("");
     const [formData,setFormData]=useState({ title:"", content:"" }); // title & content gets updated at same time hence combined into single object
+
     // const [blogs, setBlogs] =  useState([]);
-    const [blogs,dispatch] = useReducer(blogsReducer, []);
+    const [blogs,dispatch] = useReducer(blogsReducer, []); 
 
     const titleRef = useRef(null); // to bring focus on title of form
 
@@ -48,7 +52,7 @@ export default function Blog(){
         }
     },[blogs])
 
-    function handleSubmit(e){
+    async function handleSubmit(e){
         e.preventDefault();
 
         if(updateIndex!==-1){
@@ -58,6 +62,22 @@ export default function Blog(){
 
         // setBlogs([{title: formData.title, content: formData.content}, ...blogs]);  
         dispatch({type:"Add Blog" , blog:{title: formData.title, content: formData.content} });
+
+        // Add a new document with a generated id.
+
+        await addDoc(collection(db, "blogs"), {
+            title: formData.title,
+            content: formData.content,
+            createdOn: new Date()
+        }); 
+
+        // const newCityRef = doc(collection(db, "blogs"));  // or use setDoc() : (setDoc is generally used to set the doc. but here used to add the doc. )
+        // await setDoc(newCityRef, {
+        //         title: formData.title,
+        //         content: formData.content,
+        //         createdOn: new Date()
+        // });
+
 
         setFormData({title: "" , content: ""})
 
