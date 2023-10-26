@@ -1,7 +1,7 @@
 //Blogging App using Hooks
 import { useState,useRef,useEffect,useReducer,createRef} from "react";
 import {db} from "../firebaseInit";
-import { collection, addDoc , doc, setDoc } from "firebase/firestore"; 
+import { collection , doc , addDoc, setDoc , getDocs } from "firebase/firestore"; 
 
 
 function blogsReducer(state , action){
@@ -17,6 +17,8 @@ function blogsReducer(state , action){
                 // all the properties from the current blog using the spread operator (...blog). Then, it updates the content property 
                 // of this new object with the value provided in action.content. This effectively updates the content of the specific blog.
             );
+        case 'Reload':
+            return [...action.all_blogs];
         default:
             return [];
     }
@@ -52,6 +54,32 @@ export default function Blog(){
         }
     },[blogs])
 
+
+    useEffect(()=>{
+        async function fetchData(){
+            const snapShot = await getDocs(collection(db, "blogs"));
+            const blogs = snapShot.docs.map((doc)=>{
+                return {
+                    id:doc.id,
+                    ...doc.data()
+                }
+            })
+
+            // snapShot.forEach((doc)=>{
+            //     console.log(doc.data().content,doc.data().createdOn.seconds );
+            // })  // doc.data().createdOn.seconds gives time when blog is created
+
+            // sort blogs based on the timestamp
+            blogs.sort((a, b) => b.createdOn.seconds - a.createdOn.seconds);   // sorted in descending order
+            // console.log(blogs);
+
+            // setBlogs(blogs);
+            dispatch({type:"Reload" , all_blogs:blogs });
+        }
+
+        fetchData();
+    },[]);
+
     async function handleSubmit(e){
         e.preventDefault();
 
@@ -60,6 +88,10 @@ export default function Blog(){
             return; // in this case user is trying to update blog and at the same time he is adding new blog which will create problem
         }
 
+        if(!formData.content.trim()){  // length of trimed string need to be greater than 0.(required attribute never handles empty strings with length greate than 0)
+            alert('Content is required.');
+            return;
+        }
         // setBlogs([{title: formData.title, content: formData.content}, ...blogs]);  
         dispatch({type:"Add Blog" , blog:{title: formData.title, content: formData.content} });
 
@@ -78,7 +110,7 @@ export default function Blog(){
         //         createdOn: new Date()
         // });
 
-
+        
         setFormData({title: "" , content: ""})
 
         titleRef.current.focus(); // focus goes onto title field of input form when app re-renders
@@ -120,11 +152,15 @@ export default function Blog(){
     }
     
     function saveChanges(updatedContent,i){
-        if(updatedContent){
+        if(updatedContent.trim()){
             dispatch({ type: 'Update Blog', index: i, new_content: updatedContent , new_title: updatedTitle });
             setUpdateIndex(-1);
         }else{
-            alert('Content is required for the update.');
+            // console.log('updatedContent',updatedContent,typeof(updatedContent),updatedContent.length,updatedContent.trim().length);
+            alert('Content is required.');
+            setTimeout(() => {
+                contentRefs[i].current.focus(); // Set focus to the content field of  blog
+            }, 0);  
             return;
         }
     }
