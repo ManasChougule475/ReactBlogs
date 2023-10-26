@@ -1,7 +1,7 @@
 //Blogging App using Hooks
 import { useState,useRef,useEffect,useReducer,createRef} from "react";
 import {db} from "../firebaseInit";
-import { collection , doc , addDoc, setDoc , getDocs } from "firebase/firestore"; 
+import { collection , doc , addDoc, setDoc , getDocs , onSnapshot} from "firebase/firestore"; 
 
 
 function blogsReducer(state , action){
@@ -56,7 +56,7 @@ export default function Blog(){
 
 
     useEffect(()=>{
-        async function fetchData(){
+        /*async function fetchData(){
             const snapShot = await getDocs(collection(db, "blogs"));
             const blogs = snapShot.docs.map((doc)=>{
                 return {
@@ -77,7 +77,20 @@ export default function Blog(){
             dispatch({type:"Reload" , all_blogs:blogs });
         }
 
-        fetchData();
+        fetchData();*/
+
+
+        const unsub = onSnapshot(collection(db, "blogs"), (snapShot) => {  // onSnapshot is a listner for live updates from database, so no need to use setBlogs/dispatch 
+            const blogs = snapShot.docs.map((doc)=>{  
+                return {
+                    id:doc.id,
+                    ...doc.data()
+                }
+            })
+            blogs.sort((a, b) => b.createdOn.seconds - a.createdOn.seconds); 
+            dispatch({type:"Reload" , all_blogs:blogs });
+        })
+        
     },[]);
 
     async function handleSubmit(e){
@@ -92,8 +105,9 @@ export default function Blog(){
             alert('Content is required.');
             return;
         }
+        
         // setBlogs([{title: formData.title, content: formData.content}, ...blogs]);  
-        dispatch({type:"Add Blog" , blog:{title: formData.title, content: formData.content} });
+        // dispatch({type:"Add Blog" , blog:{title: formData.title, content: formData.content} });  // commenting cause using real time update via onSnapshot
 
         // Add a new document with a generated id.
 
