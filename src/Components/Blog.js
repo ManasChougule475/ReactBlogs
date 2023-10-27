@@ -1,7 +1,7 @@
 //Blogging App using Hooks
 import { useState,useRef,useEffect,useReducer,createRef} from "react";
 import {db} from "../firebaseInit";
-import { collection , doc , addDoc, setDoc , getDocs , onSnapshot} from "firebase/firestore"; 
+import { collection , doc , addDoc, setDoc , getDocs , onSnapshot , deleteDoc} from "firebase/firestore"; 
 
 
 function blogsReducer(state , action){
@@ -140,9 +140,11 @@ export default function Blog(){
         console.log(blogs); // prints previous state as dispatch(& setBlogs) is asynchronous fun. so blog is added inside blogs array after console.log() executes
     }
 
-    async function removeBlog(i){
+    async function removeBlog(id){
         // setBlogs(blogs.filter((blog,index)=> i!==index));
-        dispatch({type:"Remove Blog", index:i}); 
+        // dispatch({type:"Remove Blog", index:i});  // removed local state
+        titleRef.current.focus();
+        await deleteDoc(doc(db, "blogs", id)); 
     }
 
 
@@ -281,7 +283,7 @@ export default function Blog(){
                         </div>
                     </div>
                     : 
-                    <button onClick={()=>removeBlog(i)} className="btn remove">
+                    <button onClick={()=>removeBlog(blog.id)} className="btn remove">
                         Delete
                     </button>}
                 </div>
