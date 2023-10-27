@@ -36,11 +36,11 @@ export default function Blog(){
     const titleRef = useRef(null); // to bring focus on title of form
 
     // update :-
-    const [updateIndex, setUpdateIndex] = useState(-1);  // Creating an array of refs for content fields will not work
+    let [updateIndex, setUpdateIndex] = useState(-1);  // Creating an array of refs for content fields will not work
     const [updatedTitle , setUpdatedTitle] = useState("")
     const [updatedContent, setUpdatedContent] = useState(""); // State to store the currently Updated content
 
-    const [contentRefs, setContentRefs] = useState([]); // to bring focus on content of blog that user wants to update
+    // const [contentRefs, setContentRefs] = useState([]); // to bring focus on content of blog that user wants to update
 
     useEffect(()=>{  
         titleRef.current.focus(); // focus goes onto title fiels when app renders or reloads
@@ -54,6 +54,7 @@ export default function Blog(){
         }
     },[blogs])
 
+    
 
     useEffect(()=>{
         /*async function fetchData(){
@@ -78,13 +79,14 @@ export default function Blog(){
         }
 
         fetchData();*/
-
-
-        const unsub = onSnapshot(collection(db, "blogs"), (snapShot) => {  // onSnapshot is a listner for live updates from database, so no need to use setBlogs/dispatch 
-            const blogs = snapShot.docs.map((doc)=>{  
+        
+        console.log('1***')
+        const unsub = onSnapshot(collection(db, "blogs"), (snapShot) => {  // onSnapshot is a listner for live updates from database, so no need to use setBlogs/dispatch
+            console.log('2********');
+            let blogs = snapShot.docs.map((doc)=>{  
                 return {
                     id:doc.id,
-                    ...doc.data()
+                    ...doc.data() 
                 }
             })
             blogs.sort((a, b) => b.createdOn.seconds - a.createdOn.seconds); 
@@ -95,7 +97,6 @@ export default function Blog(){
 
     async function handleSubmit(e){
         e.preventDefault();
-
         if(updateIndex!==-1){
             alert('first update the blog you are trying to update then only you can add new blog')
             return; // in this case user is trying to update blog and at the same time he is adding new blog which will create problem
@@ -111,10 +112,12 @@ export default function Blog(){
 
         // Add a new document with a generated id.
 
+        const newBlogRef = createRef(); 
         await addDoc(collection(db, "blogs"), {
             title: formData.title,
             content: formData.content,
-            createdOn: new Date()
+            createdOn: new Date(),
+            ref:newBlogRef  //** reference to content field of new blog is added in new blog itself
         }); 
 
         // const newCityRef = doc(collection(db, "blogs"));  // or use setDoc() : (setDoc is generally used to set the doc. but here used to add the doc. )
@@ -130,17 +133,18 @@ export default function Blog(){
         titleRef.current.focus(); // focus goes onto title field of input form when app re-renders
 
         // creating reference(newBlogRef) to newBlog that use wants to add
-        const newBlogRef = createRef();  // cannot use useRef inside function (can use inside a react hook)
-        contentRefs.push(newBlogRef);  
-        setContentRefs([...contentRefs]);  // creates a new array with the same refs that are in contentRefs. It's using the spread operator [...contentRefs] to create a shallow copy of the array. 
+        // const newBlogRef = createRef();  // cannot use useRef inside function (can use inside a react hook)
+        // contentRefs.push(newBlogRef);  
+        // setContentRefs([...contentRefs]);  // creates a new array with the same refs that are in contentRefs. It's using the spread operator [...contentRefs] to create a shallow copy of the array. 
 
         console.log(blogs); // prints previous state as dispatch(& setBlogs) is asynchronous fun. so blog is added inside blogs array after console.log() executes
     }
 
-    function removeBlog(i){
+    async function removeBlog(i){
         // setBlogs(blogs.filter((blog,index)=> i!==index));
-        dispatch({type:"Remove Blog", index:i});
+        dispatch({type:"Remove Blog", index:i}); 
     }
+
 
 
     // code to update the blog :- 
@@ -148,9 +152,9 @@ export default function Blog(){
         setUpdateIndex(i);
         setUpdatedTitle(blogs[i].title);
         setUpdatedContent(blogs[i].content); // Set the Updated content to blogs[i].content 
-
         setTimeout(() => {
-            contentRefs[i].current.focus(); // Set focus to the content field of the specific blog
+            // contentRefs[i].current.focus(); // Set focus to the content field of the specific blog
+            blogs[i].ref.current.focus();
         }, 0);  
         // if not used setTimeout & tries to set focus using contentRefs[i].current.focus() immediately after clicking the "Update" button, then focus will not be set
         // cause React might not have updated/rendered DOM or not updated state yet cause browser's rendering and state updates are asynchronous.
@@ -165,15 +169,26 @@ export default function Blog(){
         }
     }
     
-    function saveChanges(updatedContent,i){
+    async function saveChanges(i,id){
+
         if(updatedContent.trim()){
-            dispatch({ type: 'Update Blog', index: i, new_content: updatedContent , new_title: updatedTitle });
+
+            // dispatch({ type: 'Update Blog', index: i, new_content: updatedContent , new_title: updatedTitle });
+
+            const newBlogRef = createRef();  // no need to use local state(setBlogs or dispatch) to update blogs cause updating from database directly
+            await setDoc(doc(db, "blogs", id), { // updating from database
+                    title: updatedTitle,
+                    content: updatedContent,
+                    createdOn: new Date(),
+                    ref : newBlogRef // cannot do blogs[i].ref
+            });
             setUpdateIndex(-1);
         }else{
             // console.log('updatedContent',updatedContent,typeof(updatedContent),updatedContent.length,updatedContent.trim().length);
             alert('Content is required.');
             setTimeout(() => {
-                contentRefs[i].current.focus(); // Set focus to the content field of  blog
+                // contentRefs[i].current.focus(); // Set focus to the content field of  blog
+                blogs[i].ref.current.focus();
             }, 0);  
             return;
         }
@@ -246,7 +261,7 @@ export default function Blog(){
                     placeholder="Content of the Blog goes here.."
                     value={updateIndex === i ? updatedContent : blog.content}
                     onChange={(e) => handleContentChange(e)}
-                    ref={contentRefs[i]} // added reference to content of blog here
+                    ref={blog.ref} // added reference to content of blog here (initially it was currentRef[i])
                     disabled={updateIndex !== i ? true : false}
                     required
                 />
@@ -255,7 +270,7 @@ export default function Blog(){
                     {updateIndex === i ? 
                     <div className="btn-container">
                         <div style={{ width: '60px', marginRight:'20px'}}>
-                            <button onClick={()=>saveChanges(updatedContent,i)} className="btn update">
+                            <button onClick={()=>saveChanges(i,blog.id)} className="btn update">
                                 Save
                             </button>
                         </div>
